@@ -1,4 +1,4 @@
-CREATE TABLE sightings (
+CREATE TABLE IF NOT EXISTS sightings (
     id SERIAL PRIMARY KEY,
     car_color VARCHAR,
     car_plate VARCHAR,
@@ -9,7 +9,7 @@ CREATE TABLE sightings (
     geog GEOGRAPHY
 );
 
-CREATE TABLE alerts ( 
+CREATE TABLE IF NOT EXISTS alerts ( 
     id SERIAL PRIMARY KEY, 
     person_name VARCHAR, 
     gender VARCHAR, race 
