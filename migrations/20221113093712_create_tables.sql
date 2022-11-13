@@ -1,4 +1,4 @@
-CREATE TABLE sitings (
+CREATE TABLE sightings (
     id SERIAL PRIMARY KEY,
     car_color VARCHAR,
     car_plate VARCHAR,
