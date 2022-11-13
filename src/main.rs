@@ -1,16 +1,39 @@
 #[macro_use]
 extern crate rocket;
 
-use serde::Serialize;
-use rocket::serde::{json::Json};
-use rocket_db_pools::{
-    sqlx::Row,
-    Connection, Database,
+use rocket::{
+    fairing::{self, AdHoc},
+    serde::json::Json,
+    Build, Rocket,
 };
+use rocket_db_pools::{sqlx::Row, Connection, Database};
+use serde::{Deserialize, Serialize};
+use sqlx::query;
 
 #[derive(Database)]
 #[database("postgis")]
 struct Postgis(sqlx::PgPool);
+
+async fn run_migrations(rocket: Rocket<Build>) -> fairing::Result {
+    match Postgis::fetch(&rocket) {
+        Some(db) => match sqlx::migrate!().run(&**db).await {
+            Ok(_) => Ok(rocket),
+            Err(e) => {
+                error!("Failed to initialize SQLx database: {}", e);
+                Err(rocket)
+            }
+        },
+        None => Err(rocket),
+    }
+}
+
+fn db_fairing() -> AdHoc {
+    AdHoc::on_ignite("SQLx Stage", |rocket| async {
+        rocket
+            .attach(Postgis::init())
+            .attach(AdHoc::try_on_ignite("SQLx Migrations", run_migrations))
+    })
+}
 
 #[get("/alerts")]
 async fn get_alerts(mut db: Connection<Postgis>) -> String {
@@ -99,7 +122,13 @@ fn healthcheck() -> String {
 
 #[launch]
 fn rocket() -> _ {
-    rocket::build()
-        .attach(Postgis::init())
-        .mount("/", routes![healthcheck, get_alerts, get_sightings, get_sightings_within_radius])
+    rocket::build().attach(db_fairing()).mount(
+        "/",
+        routes![
+            healthcheck,
+            get_alerts,
+            get_sitings,
+            get_sitings_within_radius
+        ],
+    )
 }
