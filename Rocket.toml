@@ -1,0 +1,2 @@
+[default.databases.postgis]
+url = "postgres://postgres:mysecretpassword@172.20.80.137:5432/postgres"
