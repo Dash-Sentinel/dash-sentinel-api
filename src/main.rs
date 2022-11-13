@@ -1,8 +1,7 @@
 #[macro_use]
 extern crate rocket;
 
-use sqlx::{query};
-use serde::{Serialize, Deserialize};
+use serde::Serialize;
 use rocket::serde::{json::Json};
 use rocket_db_pools::{
     sqlx::Row,
@@ -35,17 +34,17 @@ async fn get_alerts(mut db: Connection<Postgis>) -> String {
     .fetch_all(&mut *db)
     .await
     {
-        Ok(data) => data
+        Ok(data) => format!("[{}]", data
             .iter()
             .map(|r| format!("{}", r.get_unchecked::<String, _>(0)))
             .collect::<Vec<String>>()
-            .join(""),
+            .join(",")),
         _ => String::from(""),
     }
 }
 
-#[get("/sitings")]
-async fn get_sitings(mut db: Connection<Postgis>) -> String {
+#[get("/sightings")]
+async fn get_sightings(mut db: Connection<Postgis>) -> String {
     match sqlx::query(
         "SELECT json_build_object(
             'id',          id,
@@ -56,7 +55,7 @@ async fn get_sitings(mut db: Connection<Postgis>) -> String {
             'car_year',    car_year,
             'created_at',  created_at,
             'geometry',    ST_AsGeoJSON(geog)::json
-        ) FROM sitings;"
+        ) FROM sightings;"
     )
     .fetch_all(&mut *db)
     .await
@@ -70,8 +69,8 @@ async fn get_sitings(mut db: Connection<Postgis>) -> String {
     }
 }
 
-#[get("/sitings-within-radius?<long>&<lat>&<radius>")]
-async fn get_sitings_within_radius(mut db: Connection<Postgis>, long: f64, lat: f64, radius: f64) -> Json<impl Serialize> {
+#[get("/sightings-within-radius?<long>&<lat>&<radius>")]
+async fn get_sightings_within_radius(mut db: Connection<Postgis>, long: f64, lat: f64, radius: f64) -> Json<impl Serialize> {
     let records =  sqlx::query!(
         "SELECT json_build_object (
             'id',          id,
@@ -82,7 +81,7 @@ async fn get_sitings_within_radius(mut db: Connection<Postgis>, long: f64, lat: 
             'car_year',    car_year,
             'created_at',  created_at,
             'geometry',    ST_AsGeoJSON(geog)::json
-        ) FROM sitings WHERE ST_Distance(geog, ST_MakePoint($1 , $2)) <= $3;", long, lat, radius
+        ) FROM sightings WHERE ST_Distance(geog, ST_MakePoint($1 , $2)) <= $3;", long, lat, radius
     )
     .fetch_all(&mut *db)
     .await.unwrap()
@@ -102,5 +101,5 @@ fn healthcheck() -> String {
 fn rocket() -> _ {
     rocket::build()
         .attach(Postgis::init())
-        .mount("/", routes![healthcheck, get_alerts, get_sitings, get_sitings_within_radius])
+        .mount("/", routes![healthcheck, get_alerts, get_sightings, get_sightings_within_radius])
 }

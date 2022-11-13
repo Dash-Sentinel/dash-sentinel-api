@@ -1,4 +1,4 @@
-CREATE TABLE sitings (
+CREATE TABLE sightings (
     id SERIAL PRIMARY KEY,
     car_color VARCHAR,
     car_plate VARCHAR,
@@ -6,10 +6,10 @@ CREATE TABLE sitings (
     car_model VARCHAR, 
     car_year VARCHAR,
     created_at TIMESTAMP NOT NULL DEFAULT now(),
-    geog GEOGRAPHY,
+    geog GEOGRAPHY
 )
 
-INSERT INTO sitings VALUES (
+INSERT INTO sightings VALUES (
     DEFAULT,
     'Red',
     'UTD 1969',
